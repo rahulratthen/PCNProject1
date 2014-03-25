@@ -14,12 +14,13 @@ import java.util.List;
  * @author rahulratthen
  */
 public class EventClass  implements Comparable<EventClass>{
-    public String eventType;
+    public String eventType, jobType;
     public double time;
     
-    public EventClass(String type, double t)
+    public EventClass(String type, double t, String jtype)
     {
         eventType = type;
+        jobType = jtype;
         time = t;
     }
 

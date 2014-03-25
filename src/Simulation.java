@@ -19,23 +19,24 @@ public class Simulation {
     public int eventCount ;
     LinkedList eventList;
     public double clock, EN ;
-    public int N ,Ndep, Narr;
+    public int N ,Ndep, Narr,l;
     boolean done ;    
     
     public Simulation()
     {
-        Scanner input = new Scanner(System.in);
-        System.out.println("Enter the value of \"m\"");
-        m = input.nextDouble();
-        System.out.println("Enter the value of \"k\"");
-        k = input.nextDouble();
-        System.out.println("Enter the value of \"lambda1\"");
-        lambda1 = input.nextDouble();
-        System.out.println("Enter the value of \"lambda2\"");
-        lambda2 = input.nextDouble();
-        System.out.println("Enter the value of \"mu\"");
-        mu = input.nextDouble();
-        
+//        Scanner input = new Scanner(System.in);
+//        System.out.println("Enter the value of \"m\"");
+//        m = input.nextDouble();
+//        System.out.println("Enter the value of \"k\"");
+//        k = input.nextDouble();
+//        System.out.println("Enter the value of \"lambda1\"");
+//        lambda1 = input.nextDouble();
+//        System.out.println("Enter the value of \"lambda2\"");
+//        lambda2 = input.nextDouble();
+//        System.out.println("Enter the value of \"mu\"");
+//        mu = input.nextDouble();
+        m=2;k=3;lambda1=0.4;lambda2=0.3;mu=3;
+        l=1;
         eventCount = 0;
         eventList = new LinkedList<EventClass>();
         clock = 0;
@@ -46,49 +47,81 @@ public class Simulation {
         
     }
     
+    public String getRandomEventType(double lambda)
+    {
+        String type=null;
+        if(DistributedPseudoRandomNumber(lambda)>0.5)
+            type = "Admin";
+        else
+            type = "User";
+        return type;
+    }
+    
     public void Simulate()
     {
-        //insert first ARR event
-        eventList.add(new EventClass("ARR",DistributedPseudoRandomNumber(lambda1)));
-        
-        while(!done)
+        for(double rho=0.1;rho<=1;rho= rho+0.1)
         {
-            EventClass currEvent = (EventClass)eventList.remove();
-            double prev = clock;
-            clock = currEvent.time;
-            
-            switch(currEvent.eventType)
+            lambda1 = rho * m * mu;
+            double lambda = lambda1 + lambda2;
+            done=false;
+            Narr=0;
+            Ndep=0;
+            N=0;
+            EN = 0;
+            clock = 0;
+            //insert first ARR event
+            eventList.add(new EventClass("ARR",DistributedPseudoRandomNumber(lambda),getRandomEventType(lambda)));
+
+            while(!done)
             {
-                case "ARR" :
-                    EN += N*(clock-prev);                 
-                    N++;
-                    Narr++;
-                    eventList.add(new EventClass("ARR",clock + DistributedPseudoRandomNumber(lambda1)));
-                    if(N==1)
-                    {
-                        eventList.add(new EventClass("DEP",clock + DistributedPseudoRandomNumber(mu)));
-                    }
-                    Collections.sort(eventList);
-                    break;
-                case "DEP" :
-                    EN += N*(clock-prev);  
-                    N--;
-                    Ndep++;
-                    if(N>0)
-                    {
-                        eventList.add(new EventClass("DEP",clock + DistributedPseudoRandomNumber(mu)));
-                    }
-                    Collections.sort(eventList);
-                    break;
+                EventClass currEvent = (EventClass)eventList.remove();
+                double prev = clock;
+                clock = currEvent.time;
+
+                switch(currEvent.eventType)
+                {
+                    case "ARR" :
+                        EN += N*(clock-prev);                 
+                        N++;
+                        Narr++;
+                        if(N<l)
+                        {
+                            //generate any type of event
+                            eventList.add(new EventClass("ARR",clock + DistributedPseudoRandomNumber(lambda),getRandomEventType(lambda)));
+                        }
+                        else if(N>=l && N<k)
+                        {
+                            //generate only Admin event
+                            eventList.add(new EventClass("ARR",clock + DistributedPseudoRandomNumber(lambda),"Admin"));
+                        }
+                        
+                        if(N<=m)
+                        {
+                            eventList.add(new EventClass("DEP",clock + DistributedPseudoRandomNumber(mu),currEvent.jobType));
+                        }
+                        Collections.sort(eventList);
+                        break;
+                    case "DEP" :
+                        EN += N*(clock-prev);  
+                        N--;
+                        Ndep++;
+                        if(N>0)
+                        {
+                            eventList.add(new EventClass("DEP",clock + DistributedPseudoRandomNumber(mu),currEvent.jobType));
+                        }
+                        Collections.sort(eventList);
+                        break;
+                }
+             System.out.println("Current number of customers in the system : "+currEvent.time);   
+                if(Ndep > 1000)
+                    done = true;
             }
             
-            if(Ndep > 100000)
-                done = true;
+            System.out.println("Current number of customers in the system : "+N);
+            //System.out.println("Expected number of customers(sim) : "+EN/clock);
+            
+            eventList.clear();
         }
-        
-        System.out.println("Current number of customers in the system : "+N);
-        //System.out.println("Expected number of customers(sim) : "+EN/clock);
-
     }
     
     public double GenerateCongruentialRV(){
