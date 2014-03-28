@@ -1,6 +1,7 @@
 
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.Random;
 import java.util.Scanner;
 
 /*
@@ -21,7 +22,7 @@ public class Simulation {
     public double clock, EN ;
     public int N ,Ndep, Narr,l;
     boolean done ;    
-    
+    Random r;
     public Simulation()
     {
 //        Scanner input = new Scanner(System.in);
@@ -35,8 +36,10 @@ public class Simulation {
 //        lambda2 = input.nextDouble();
 //        System.out.println("Enter the value of \"mu\"");
 //        mu = input.nextDouble();
+        r = new Random(100);
+
         m=2;k=3;lambda1=0.4;lambda2=0.3;mu=3;
-        l=1;
+        l=3;
         eventCount = 0;
         eventList = new LinkedList<EventClass>();
         clock = 0;
@@ -47,10 +50,10 @@ public class Simulation {
         
     }
     
-    public String getRandomEventType(double lambda)
+    public String getRandomEventType()
     {
         String type=null;
-        if(DistributedPseudoRandomNumber(lambda)>0.5)
+        if(r.nextDouble()%100 > 0.5)
             type = "Admin";
         else
             type = "User";
@@ -70,14 +73,14 @@ public class Simulation {
             EN = 0;
             clock = 0;
             //insert first ARR event
-            eventList.add(new EventClass("ARR",DistributedPseudoRandomNumber(lambda),getRandomEventType(lambda)));
+            eventList.add(new EventClass("ARR",DistributedPseudoRandomNumber(lambda),getRandomEventType()));
 
             while(!done)
             {
                 EventClass currEvent = (EventClass)eventList.remove();
                 double prev = clock;
                 clock = currEvent.time;
-
+                System.out.println(currEvent.time+" "+currEvent.jobType+" "+currEvent.eventType);
                 switch(currEvent.eventType)
                 {
                     case "ARR" :
@@ -87,17 +90,18 @@ public class Simulation {
                         if(N<l)
                         {
                             //generate any type of event
-                            eventList.add(new EventClass("ARR",clock + DistributedPseudoRandomNumber(lambda),getRandomEventType(lambda)));
+                            
+                            eventList.add(new EventClass("ARR",clock + DistributedPseudoRandomNumber(lambda),getRandomEventType()));
                         }
                         else if(N>=l && N<k)
                         {
                             //generate only Admin event
-                            eventList.add(new EventClass("ARR",clock + DistributedPseudoRandomNumber(lambda),"Admin"));
+                            eventList.add(new EventClass("ARR",clock + DistributedPseudoRandomNumber(lambda1),"Admin"));
                         }
-                        
-                        if(N<=m)
+                        //eventList.add(new EventClass("ARR",clock + DistributedPseudoRandomNumber(lambda1),getRandomEventType()));
+                        if(N<=m && N>0)
                         {
-                            eventList.add(new EventClass("DEP",clock + DistributedPseudoRandomNumber(mu),currEvent.jobType));
+                            eventList.add(new EventClass("DEP",clock + DistributedPseudoRandomNumber(m*mu),currEvent.jobType));
                         }
                         Collections.sort(eventList);
                         break;
@@ -105,21 +109,22 @@ public class Simulation {
                         EN += N*(clock-prev);  
                         N--;
                         Ndep++;
-                        if(N>0)
+                        if(N>m-1)
                         {
-                            eventList.add(new EventClass("DEP",clock + DistributedPseudoRandomNumber(mu),currEvent.jobType));
+                            eventList.add(new EventClass("DEP",clock + DistributedPseudoRandomNumber(m*mu),currEvent.jobType));
                         }
-                        Collections.sort(eventList);
+                         Collections.sort(eventList);
                         break;
                 }
-             System.out.println("Current number of customers in the system : "+currEvent.time);   
+             
                 if(Ndep > 1000)
                     done = true;
             }
             
-            System.out.println("Current number of customers in the system : "+N);
-            //System.out.println("Expected number of customers(sim) : "+EN/clock);
-            
+            System.out.println("Current number of customers in the system : "+rho);
+            System.out.println("Expected number of customers(sim) : "+EN/clock);
+            Scanner in = new Scanner(System.in);
+            in.nextLine();
             eventList.clear();
         }
     }
